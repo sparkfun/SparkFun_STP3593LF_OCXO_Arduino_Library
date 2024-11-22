@@ -86,7 +86,7 @@ class SfeSTP3593LFDriver
 public:
     // @brief Constructor. Instantiate the driver object using the specified address (if desired).
     SfeSTP3593LFDriver()
-        : _baseFrequencyHz{10000000.0}, _maxFrequencyChangePPB{400.0}
+        : _maxFrequencyChangePPB{400.0}
     {
     }
 
@@ -142,7 +142,6 @@ private:
     sfeTkArdI2C *_theBus; // Pointer to bus device.
 
     uint32_t _frequencyControl; // Local store for the frequency control word. 20-Bit
-    double _baseFrequencyHz; // The base frequency used by getFrequencyHz and setFrequencyHz
     double _maxFrequencyChangePPB; // The maximum frequency change in PPB for setFrequencyByBiasMillis
 };
 
