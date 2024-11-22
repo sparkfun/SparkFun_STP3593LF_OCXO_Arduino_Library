@@ -31,9 +31,9 @@ void setup()
   Wire.begin(); // Begin the I2C bus
 
   bool begun;
-  begun = myOCXO.begin(Wire, 0x50); // Initialize the STP3593LF - using a custom bus and address
-  begun = myOCXO.begin(0x50); // This is also possible. It defaults to Wire
-  begun = myOCXO.begin(); // This is also possible. It defaults to Wire and address 0x50
+  begun = myOCXO.begin(Wire, 0x70); // Initialize the STP3593LF - using a custom bus and address
+  begun = myOCXO.begin(0x70); // This is also possible. It defaults to Wire
+  begun = myOCXO.begin(); // This is also possible. It defaults to Wire and address 0x70
 
   if (!begun)
   {
@@ -41,14 +41,10 @@ void setup()
     while (1); // Do nothing more
   }
 
-  // Read the frequency control word - should be zero initially
+  // Read the frequency control word - should be ~500000 initially?
   int64_t fcw = myOCXO.getFrequencyControlWord();
   Serial.print("The frequency control word is: ");
   Serial.println(fcw);
-
-  // Read the available (clipped) pull range
-  double pullAvailable = myOCXO.getMaxPullAvailable();
-  Serial.printf("Maximum frequency pull is: %e\r\n", pullAvailable);
 }
 
 void loop()

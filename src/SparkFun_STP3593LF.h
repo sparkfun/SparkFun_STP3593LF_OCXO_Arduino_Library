@@ -43,11 +43,13 @@
 
     All we need to know is that:
     Frequency Control can be adjusted in the range 0 - 1000000.
-    The nominal OCXO frequency is 10MHz.
-    The sensitivity is 8E-13 per step / LSB.
+    The frequency resolution is 8E-13 per step / LSB.
+    I.e. the frequency can be pulled in the range 0 - 800ppb; +/-400ppb.
+    (The frequency calibration is quoted as +/-50ppb at time of shipment
+     and the 10 year life-time accuracy is quoted as +/-350ppb.)
 
-    For this oscillator, getFrequencyHz and setFrequencyHz don't apply.
-    Or not easily / accurately...
+    For this oscillator, getFrequencyHz, setFrequencyHz, getBaseFrequencyHz,
+    setBaseFrequencyHz don't apply.
 
 */
 
@@ -75,7 +77,7 @@ const uint8_t kSfeSTP3593LFRegSaveFrequency = 0xC2; // Save Frequency Control Va
 ///////////////////////////////////////////////////////////////////////////////
 
 const uint32_t kSfeSTP3593LFFreqControlMaxValue = 1000000;
-const double kSfeSTP3593LFFreqControlSensitivity = 8e-13;
+const double kSfeSTP3593LFFreqControlResolution = 8e-13;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -97,7 +99,6 @@ public:
     /// @return true if the read is successful
     bool readFrequencyControlWord(void);
 
-
     /// @brief Get the 20-bit frequency control word - from the driver's internal copy
     /// @return The 20-bit frequency control word as uint32_t (unsigned)
     uint32_t getFrequencyControlWord(void);
@@ -106,16 +107,6 @@ public:
     /// @param freq the frequency control word as uint32_t (unsigned)
     /// @return true if the write is successful
     bool setFrequencyControlWord(uint32_t freq);
-
-
-    /// @brief Get the base oscillator frequency - from the driver's internal copy
-    /// @return The oscillator base frequency as double
-    double getBaseFrequencyHz(void);
-
-    /// @brief Set the base oscillator frequency in Hz - set the driver's internal _baseFrequencyHz
-    /// @param freq the base frequency in Hz
-    /// @return true if the write is successful
-    void setBaseFrequencyHz(double freq);
 
 
     /// @brief Get the maximum frequency change in PPB
@@ -134,9 +125,9 @@ public:
     /// @return true if the write is successful
     /// Note: the frequency change will be limited by: the pull range capabilities of the device;
     ///       and the setMaxFrequencyChangePPB.
-    /// The default values for Pk and Ik come from very approximate Ziegler-Nichols tuning:
-    /// oscillation starts when Pk is TODO; with a period of TODO seconds.
-    bool setFrequencyByBiasMillis(double bias, double Pk = 0.5, double Ik = 0.1);
+    /// The default values for Pk and Ik come from testing by Fugro:
+    bool setFrequencyByBiasMillis(double bias, double Pk = 1.0 / 6.25, double Ik = (1.0 / 6.25) / 150.0);
+
 
     /// @brief Save the frequency control value - to be reloaded at start-up
     /// @return true if the write is successful
@@ -150,7 +141,6 @@ protected:
 private:
     sfeTkArdI2C *_theBus; // Pointer to bus device.
 
-    const uint32_t _pullLimit = 1000000;
     uint32_t _frequencyControl; // Local store for the frequency control word. 20-Bit
     double _baseFrequencyHz; // The base frequency used by getFrequencyHz and setFrequencyHz
     double _maxFrequencyChangePPB; // The maximum frequency change in PPB for setFrequencyByBiasMillis
