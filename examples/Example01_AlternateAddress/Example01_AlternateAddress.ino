@@ -42,7 +42,7 @@ void setup()
   }
 
   // Read the frequency control word - should be ~500000 initially?
-  int64_t fcw = myOCXO.getFrequencyControlWord();
+  uint32_t fcw = myOCXO.getFrequencyControlWord();
   Serial.print("The frequency control word is: ");
   Serial.println(fcw);
 }
