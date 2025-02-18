@@ -18,38 +18,44 @@
 
 */
 
-#include "SparkFun_STP3593LF.h"
+#include "sfDevSTP3593LF.h"
 
 /// @brief Begin communication with the STP3593LF. Read the registers.
 /// @return true if readRegisters is successful.
-bool SfeSTP3593LFDriver::begin()
+sfTkError_t sfDevSTP3593LF::begin(sfTkII2C *commBus)
 {
-    if (_theBus->ping() != kSTkErrOk)
-        return false;
+    if (commBus == nullptr)
+        return ksfTkErrFail;
+
+    _theBus = commBus;
+
+    if (_theBus->ping() != ksfTkErrOk)
+        return ksfTkErrFail;
 
     // Read the frequency control register twice - in case the user is using the emulator
     // (This ensures the emulator registerAddress points at 0x41 correctly)
     if (readFrequencyControlWord())
-        return (readFrequencyControlWord());
+        return (readFrequencyControlWord() ? ksfTkErrOk : ksfTkErrFail);
 
-    return false;
+    return ksfTkErrFail;
 }
 
 /// @brief Read the STP3593LF OCXO frequency control register and update the driver's internal copy
 /// @return true if the read is successful
-bool SfeSTP3593LFDriver::readFrequencyControlWord(void)
+bool sfDevSTP3593LF::readFrequencyControlWord(void)
 {
     uint8_t theBytes[4];
     size_t readBytes;
 
     // Read 4 bytes, starting at address kSfeSTP3593LFRegReadFrequencyControl (0x41)
-    if (_theBus->readRegisterRegion(kSfeSTP3593LFRegReadFrequencyControl, (uint8_t *)&theBytes[0], 4, readBytes) != kSTkErrOk)
+    if (_theBus->readRegisterRegion(kSfeSTP3593LFRegReadFrequencyControl, (uint8_t *)&theBytes[0], 4, readBytes) !=
+        ksfTkErrOk)
         return false;
     if (readBytes != 4)
         return false;
 
     // Extract the control word - MSB first
-     uint32_t frequencyControl = (((uint32_t)theBytes[0]) << 24);
+    uint32_t frequencyControl = (((uint32_t)theBytes[0]) << 24);
     frequencyControl |= (((uint32_t)theBytes[1]) << 16);
     frequencyControl |= (((uint32_t)theBytes[2]) << 8);
     frequencyControl |= (((uint32_t)theBytes[3]) << 0);
@@ -65,7 +71,7 @@ bool SfeSTP3593LFDriver::readFrequencyControlWord(void)
 
 /// @brief Get the 20-bit frequency control word - from the driver's internal copy
 /// @return The 20-bit frequency control word as uint32_t (unsigned)
-uint32_t SfeSTP3593LFDriver::getFrequencyControlWord(void)
+uint32_t sfDevSTP3593LF::getFrequencyControlWord(void)
 {
     return _frequencyControl;
 }
@@ -73,7 +79,7 @@ uint32_t SfeSTP3593LFDriver::getFrequencyControlWord(void)
 /// @brief Set the 20-bit frequency control word - and update the driver's internal copy
 /// @param freq the frequency control word as uint32_t (unsigned)
 /// @return true if the write is successful
-bool SfeSTP3593LFDriver::setFrequencyControlWord(uint32_t freq)
+bool sfDevSTP3593LF::setFrequencyControlWord(uint32_t freq)
 {
     uint8_t theBytes[4];
 
@@ -83,10 +89,10 @@ bool SfeSTP3593LFDriver::setFrequencyControlWord(uint32_t freq)
 
     theBytes[0] = (uint8_t)((freq >> 24) & 0xFF); // MSB first
     theBytes[1] = (uint8_t)((freq >> 16) & 0xFF);
-    theBytes[2] = (uint8_t)((freq >>  8) & 0xFF);
-    theBytes[3] = (uint8_t)((freq >>  0) & 0xFF);
+    theBytes[2] = (uint8_t)((freq >> 8) & 0xFF);
+    theBytes[3] = (uint8_t)((freq >> 0) & 0xFF);
 
-    if (_theBus->writeRegisterRegion(kSfeSTP3593LFRegWriteDAC, (const uint8_t *)&theBytes[0], 4) != kSTkErrOk)
+    if (_theBus->writeRegisterRegion(kSfeSTP3593LFRegWriteDAC, (const uint8_t *)&theBytes[0], 4) != ksfTkErrOk)
         return false; // Return false if the write failed
 
     _frequencyControl = freq; // Only update the driver's copy if the write was successful
@@ -95,14 +101,14 @@ bool SfeSTP3593LFDriver::setFrequencyControlWord(uint32_t freq)
 
 /// @brief Get the maximum frequency change in PPB
 /// @return The maximum frequency change in PPB - from the driver's internal store
-double SfeSTP3593LFDriver::getMaxFrequencyChangePPB(void)
+double sfDevSTP3593LF::getMaxFrequencyChangePPB(void)
 {
     return _maxFrequencyChangePPB;
 }
 
 /// @brief Set the maximum frequency change in PPB - set the driver's internal _maxFrequencyChangePPB
 /// @param ppb the maximum frequency change in PPB
-void SfeSTP3593LFDriver::setMaxFrequencyChangePPB(double ppb)
+void sfDevSTP3593LF::setMaxFrequencyChangePPB(double ppb)
 {
     _maxFrequencyChangePPB = ppb;
 }
@@ -114,7 +120,7 @@ void SfeSTP3593LFDriver::setMaxFrequencyChangePPB(double ppb)
 /// @return true if the write is successful
 /// Note: the frequency change will be limited by: the pull range capabilities of the device;
 ///       and the setMaxFrequencyChangePPB.
-bool SfeSTP3593LFDriver::setFrequencyByBiasMillis(double bias, double Pk, double Ik)
+bool sfDevSTP3593LF::setFrequencyByBiasMillis(double bias, double Pk, double Ik)
 {
     static double I;
     static bool initialized = false;
@@ -157,7 +163,7 @@ bool SfeSTP3593LFDriver::setFrequencyByBiasMillis(double bias, double Pk, double
 
 /// @brief Save the frequency control value - to be reloaded at start-up
 /// @return true if the write is successful
-bool SfeSTP3593LFDriver::saveFrequencyControlValue(void)
+bool sfDevSTP3593LF::saveFrequencyControlValue(void)
 {
     bool result = true;
     result &= _theBus->writeByte(kSfeSTP3593LFRegSaveFrequency);
@@ -168,7 +174,7 @@ bool SfeSTP3593LFDriver::saveFrequencyControlValue(void)
 
 /// @brief  PROTECTED: update the local pointer to the I2C bus.
 /// @param  theBus Pointer to the bus object.
-void SfeSTP3593LFDriver::setCommunicationBus(sfeTkArdI2C *theBus)
+void sfDevSTP3593LF::setCommunicationBus(sfTkII2C *theBus)
 {
     _theBus = theBus;
 }

@@ -58,142 +58,65 @@
 #include <stdint.h>
 
 #include <Arduino.h>
+// .. some header order issue right now...
+// clang-format off
 #include <SparkFun_Toolkit.h>
+#include "sfTk/sfDevSTP3593LF.h"
+// clang-format on
 
-///////////////////////////////////////////////////////////////////////////////
-// I2C Addressing
-///////////////////////////////////////////////////////////////////////////////
-// The STP3593LF has a fixed address of 0xE0 (shifted), 0x70 (unshifted).
-const uint8_t kDefaultSTP3593LFAddr = 0x70;
-
-///////////////////////////////////////////////////////////////////////////////
-// 32-bit Register Addresses
-///////////////////////////////////////////////////////////////////////////////
-
-const uint8_t kSfeSTP3593LFRegReadFrequencyControl = 0x41; // Read Frequency Control
-const uint8_t kSfeSTP3593LFRegWriteDAC = 0xA0; // Write DAC 20-bits (0-1000000)
-const uint8_t kSfeSTP3593LFRegSaveFrequency = 0xC2; // Save Frequency Control Value
-
-///////////////////////////////////////////////////////////////////////////////
-
-const uint32_t kSfeSTP3593LFFreqControlMaxValue = 1000000;
-const double kSfeSTP3593LFFreqControlResolution = 8e-13;
-
-///////////////////////////////////////////////////////////////////////////////
-
-class SfeSTP3593LFDriver
+class SfeSTP3593LFArdI2C : public sfDevSTP3593LF
 {
-public:
-    // @brief Constructor. Instantiate the driver object using the specified address (if desired).
-    SfeSTP3593LFDriver()
-        : _maxFrequencyChangePPB{400.0}
-    {
-    }
-
-    /// @brief Begin communication with the STP3593LF. Read the registers.
-    /// @return true if readRegisters is successful.
-    bool begin(void);
-
-
-    /// @brief Read the STP3593LF OCXO frequency control register and update the driver's internal copy
-    /// @return true if the read is successful
-    bool readFrequencyControlWord(void);
-
-    /// @brief Get the 20-bit frequency control word - from the driver's internal copy
-    /// @return The 20-bit frequency control word as uint32_t (unsigned)
-    uint32_t getFrequencyControlWord(void);
-
-    /// @brief Set the 20-bit frequency control word - and update the driver's internal copy
-    /// @param freq the frequency control word as uint32_t (unsigned)
-    /// @return true if the write is successful
-    bool setFrequencyControlWord(uint32_t freq);
-
-
-    /// @brief Get the maximum frequency change in PPB
-    /// @return The maximum frequency change in PPB - from the driver's internal store
-    double getMaxFrequencyChangePPB(void);
-
-    /// @brief Set the maximum frequency change in PPB - set the driver's internal _maxFrequencyChangePPB
-    /// @param ppb the maximum frequency change in PPB
-    void setMaxFrequencyChangePPB(double ppb);
-
-
-    /// @brief Set the frequency according to the GNSS receiver clock bias in milliseconds
-    /// @param bias the GNSS RX clock bias in milliseconds
-    /// @param Pk the Proportional term
-    /// @param Ik the Integral term
-    /// @return true if the write is successful
-    /// Note: the frequency change will be limited by: the pull range capabilities of the device;
-    ///       and the setMaxFrequencyChangePPB.
-    /// The default values for Pk and Ik come from testing by Fugro:
-    bool setFrequencyByBiasMillis(double bias, double Pk = 1.0 / 6.25, double Ik = (1.0 / 6.25) / 150.0);
-
-
-    /// @brief Save the frequency control value - to be reloaded at start-up
-    /// @return true if the write is successful
-    bool saveFrequencyControlValue(void);
-
-protected:
-    /// @brief Sets the communication bus to the specified bus.
-    /// @param theBus Bus to set as the communication devie.
-    void setCommunicationBus(sfeTkArdI2C *theBus);
-
-private:
-    sfeTkArdI2C *_theBus; // Pointer to bus device.
-
-    uint32_t _frequencyControl; // Local store for the frequency control word. 20-Bit
-    double _maxFrequencyChangePPB; // The maximum frequency change in PPB for setFrequencyByBiasMillis
-};
-
-class SfeSTP3593LFArdI2C : public SfeSTP3593LFDriver
-{
-public:
+  public:
     SfeSTP3593LFArdI2C()
     {
     }
 
     /// @brief  Sets up Arduino I2C driver using the default I2C address then calls the super class begin.
     /// @return True if successful, false otherwise.
-    bool begin(void)
+    // bool begin(void)
+    // {
+    //     if (_theI2CBus.init(kDefaultSTP3593LFAddr) != kSTkErrOk)
+    //         return false;
+
+    //     setCommunicationBus(&_theI2CBus);
+
+    //     _theI2CBus.setStop(false); // Use restarts not stops for I2C reads
+
+    //     return SfeSTP3593LFDriver::begin();
+    // }
+
+    /// @brief  Sets up Arduino I2C driver using the specified I2C address then calls the super class begin.
+    /// @return True if successful, false otherwise.
+    bool begin(const uint8_t address = kDefaultSTP3593LFAddr)
     {
-        if (_theI2CBus.init(kDefaultSTP3593LFAddr) != kSTkErrOk)
+        if (_theI2CBus.init(address) != ksfTkErrOk)
             return false;
 
-        setCommunicationBus(&_theI2CBus);
-
-        _theI2CBus.setStop(false); // Use restarts not stops for I2C reads
-
-        return SfeSTP3593LFDriver::begin();
+        return beginDevice();
     }
 
     /// @brief  Sets up Arduino I2C driver using the specified I2C address then calls the super class begin.
     /// @return True if successful, false otherwise.
-    bool begin(const uint8_t &address)
+    bool begin(TwoWire &wirePort, const uint8_t address = kDefaultSTP3593LFAddr)
     {
-        if (_theI2CBus.init(address) != kSTkErrOk)
+        if (_theI2CBus.init(wirePort, address) != ksfTkErrOk)
             return false;
 
-        setCommunicationBus(&_theI2CBus);
+        return beginDevice();
+    }
+
+  private:
+    bool beginDevice(void)
+    {
+
+        // the intent is that the bus is setup and we can see if the device is connected
+        if (_theI2CBus.ping() == ksfTkErrOk)
+            return false;
 
         _theI2CBus.setStop(false); // Use restarts not stops for I2C reads
 
-        return SfeSTP3593LFDriver::begin();
+        return sfDevSTP3593LF::begin(&_theI2CBus) == ksfTkErrOk;
     }
 
-    /// @brief  Sets up Arduino I2C driver using the specified I2C address then calls the super class begin.
-    /// @return True if successful, false otherwise.
-    bool begin(TwoWire &wirePort, const uint8_t &address)
-    {
-        if (_theI2CBus.init(wirePort, address) != kSTkErrOk)
-            return false;
-
-        setCommunicationBus(&_theI2CBus);
-
-        _theI2CBus.setStop(false); // Use restarts not stops for I2C reads
-
-        return SfeSTP3593LFDriver::begin();
-    }
-
-private:
-    sfeTkArdI2C _theI2CBus;
+    sfTkArdI2C _theI2CBus;
 };
