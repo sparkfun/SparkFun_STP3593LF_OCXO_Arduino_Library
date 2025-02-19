@@ -110,7 +110,7 @@ class SfeSTP3593LFArdI2C : public sfDevSTP3593LF
     {
 
         // the intent is that the bus is setup and we can see if the device is connected
-        if (_theI2CBus.ping() == ksfTkErrOk)
+        if (_theI2CBus.ping() != ksfTkErrOk)
             return false;
 
         _theI2CBus.setStop(false); // Use restarts not stops for I2C reads
