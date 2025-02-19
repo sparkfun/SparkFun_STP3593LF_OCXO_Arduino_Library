@@ -3,7 +3,7 @@ SparkFun STP3593LF OCXO Arduino Library
 
 <table class="table table-hover table-striped table-bordered">
     <tr align="center">
-        <td><a href="https://www.sparkfun.com/products/26289"><img src="" alt="Standard"></a></td>
+        <td><a href="https://www.sparkfun.com/products/26289"><img src="https://cdn.sparkfun.com/r/600-600/assets/parts/2/7/2/0/7/26289-GNSS-Disciplined-Oscillator-Front-Lit.jpg" alt="Standard"></a></td>
     </tr>
     <tr align="center">
         <td><a href="https://www.sparkfun.com/products/26289">SparkFun GNSSDO</a></td>
