@@ -48,7 +48,7 @@ bool sfDevSTP3593LF::readFrequencyControlWord(void)
     size_t readBytes;
 
     // Read 4 bytes, starting at address kSfeSTP3593LFRegReadFrequencyControl (0x41)
-    if (_theBus->readRegisterRegion(kSfeSTP3593LFRegReadFrequencyControl, (uint8_t *)&theBytes[0], 4, readBytes) !=
+    if (_theBus->readRegister(kSfeSTP3593LFRegReadFrequencyControl, (uint8_t *)&theBytes[0], 4, readBytes) !=
         ksfTkErrOk)
         return false;
     if (readBytes != 4)
@@ -92,7 +92,7 @@ bool sfDevSTP3593LF::setFrequencyControlWord(uint32_t freq)
     theBytes[2] = (uint8_t)((freq >> 8) & 0xFF);
     theBytes[3] = (uint8_t)((freq >> 0) & 0xFF);
 
-    if (_theBus->writeRegisterRegion(kSfeSTP3593LFRegWriteDAC, (const uint8_t *)&theBytes[0], 4) != ksfTkErrOk)
+    if (_theBus->writeRegister(kSfeSTP3593LFRegWriteDAC, (const uint8_t *)&theBytes[0], 4) != ksfTkErrOk)
         return false; // Return false if the write failed
 
     _frequencyControl = freq; // Only update the driver's copy if the write was successful
@@ -166,7 +166,7 @@ bool sfDevSTP3593LF::setFrequencyByBiasMillis(double bias, double Pk, double Ik)
 bool sfDevSTP3593LF::saveFrequencyControlValue(void)
 {
     bool result = true;
-    result &= _theBus->writeByte(kSfeSTP3593LFRegSaveFrequency);
+    result &= _theBus->writeData(kSfeSTP3593LFRegSaveFrequency);
     if (result)
         result &= readFrequencyControlWord();
     return result;
